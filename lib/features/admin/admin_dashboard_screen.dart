@@ -10,7 +10,7 @@ class AdminDashboardScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('Admin Dashboard')),
       body: ListView(
         padding: const EdgeInsets.all(16),
-        children: [
+        children: [ 
           ListTile(
             title: const Text('Manage Ads'),
             trailing: const Icon(Icons.chevron_right),

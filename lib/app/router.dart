@@ -40,7 +40,10 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       ShellRoute(
-        builder: (context, state, child) => MainShell(child: child),
+      builder: (context, state, child) => MainShell(
+      child: child,
+      location: state.uri.toString(),
+  ),
         routes: [
           GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
           GoRoute(path: '/add', builder: (context, state) => const AddAdScreen()),

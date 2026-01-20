@@ -27,7 +27,7 @@ class HomeScreen extends ConsumerWidget {
 
     return Column(
       children: [
-        // KATEGORIJE (chips)
+        // KATEGORIJE
         SizedBox(
           height: 56,
           child: ListView(

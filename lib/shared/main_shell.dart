@@ -7,7 +7,13 @@ import '../features/auth/auth_state.dart';
 
 class MainShell extends ConsumerWidget {
   final Widget child;
-  const MainShell({super.key, required this.child});
+  final String location;
+
+  const MainShell({
+    super.key,
+    required this.child,
+    required this.location,
+  });
 
   int _indexForLocation(String location) {
     if (location.startsWith('/add')) return 1;
@@ -30,8 +36,6 @@ class MainShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authProvider);
 
-    // Stabilnije nego GoRouterState.of(context) u ShellRoute kontekstu:
-    final location = GoRouter.of(context).routerDelegate.currentConfiguration.fullPath; 
     final currentIndex = _indexForLocation(location);
 
     void goProtected(String path) {
@@ -56,7 +60,7 @@ class MainShell extends ConsumerWidget {
           if (!auth.isLoggedIn)
             TextButton(
               onPressed: () => context.go('/login'),
-              child: const Text('Login'),
+              child: const Text('Login'), 
             )
           else
             TextButton(
