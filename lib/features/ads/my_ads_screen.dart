@@ -77,9 +77,9 @@ class MyAdsScreen extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
-                  tooltip: 'Izmeni',
+                  tooltip: 'Izmeni', 
                   icon: const Icon(Icons.edit),
-                  onPressed: () => context.go('/edit/${ad.id}'),
+                  onPressed: () => context.push('/edit/${ad.id}'),
                 ),
                 IconButton(
                   tooltip: 'Obriši',

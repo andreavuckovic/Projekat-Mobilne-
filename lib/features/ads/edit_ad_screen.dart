@@ -260,7 +260,7 @@ class _EditAdScreenState extends ConsumerState<EditAdScreen> {
                       images: List<Uint8List>.from(_images),
                     );
 
-                context.go('/my-ads');
+                context.pop();
               },
             ),
           ],

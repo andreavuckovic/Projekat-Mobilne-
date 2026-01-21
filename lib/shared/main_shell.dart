@@ -46,7 +46,7 @@ class MainShell extends ConsumerWidget {
       }
     }
 
-    return Scaffold(
+    return Scaffold( 
       appBar: AppBar(
         centerTitle: true,
         title: Text('QuickAds • ${_roleLabel(auth.role)}'),
@@ -54,7 +54,7 @@ class MainShell extends ConsumerWidget {
           if (auth.role == UserRole.admin)
             IconButton(
               tooltip: 'Admin panel',
-              onPressed: () => context.go('/admin'),
+              onPressed: () => context.push('/admin'),
               icon: const Icon(Icons.admin_panel_settings),
             ),
           if (!auth.isLoggedIn)
@@ -72,7 +72,7 @@ class MainShell extends ConsumerWidget {
             ),
         ],
       ),
-      body: child,
+      body: child, 
       bottomNavigationBar: NavigationBar(
         selectedIndex: currentIndex,
         onDestinationSelected: (i) {
