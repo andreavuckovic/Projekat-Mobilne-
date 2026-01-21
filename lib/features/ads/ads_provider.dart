@@ -5,6 +5,9 @@ import '../auth/auth_provider.dart';
 import '../auth/auth_state.dart';
 import 'ad_model.dart';
 
+import 'dart:typed_data';
+
+
 final adsProvider = NotifierProvider<AdsController, List<Ad>>(AdsController.new);
 
 class AdsController extends Notifier<List<Ad>> {
@@ -37,6 +40,7 @@ class AdsController extends Notifier<List<Ad>> {
     required String description,
     required AdCategory category,
     required double price,
+    List<Uint8List> images = const [],
   }) {
     final auth = ref.read(authProvider);
     if (!auth.isLoggedIn) return;
@@ -48,6 +52,7 @@ class AdsController extends Notifier<List<Ad>> {
       category: category,
       price: price,
       ownerId: auth.user!.id,
+      images: images,
     );
 
     state = [newAd, ...state];

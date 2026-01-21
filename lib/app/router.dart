@@ -12,8 +12,12 @@ import '../features/ads/my_ads_screen.dart';
 import '../features/admin/admin_dashboard_screen.dart';
 import '../features/admin/manage_ads_screen.dart';
 import '../features/admin/manage_users_screen.dart';
+import '../features/ads/ad_details_screen.dart'; 
+
 
 import '../shared/main_shell.dart';
+
+
 
 final routerProvider = Provider<GoRouter>((ref) {
   final auth = ref.watch(authProvider);
@@ -60,6 +64,15 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: 'users', builder: (context, state) => const ManageUsersScreen()),
         ],
       ),
+      GoRoute(
+        path: '/ad/:id',
+        builder: (context, state) {
+        final id = state.pathParameters['id']!;
+        return AdDetailsScreen(adId: id);
+          },
+        ),
+
+      
     ],
   );
 });

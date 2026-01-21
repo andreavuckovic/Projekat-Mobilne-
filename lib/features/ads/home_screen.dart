@@ -5,6 +5,9 @@ import 'ads_provider.dart';
 import 'ad_model.dart';
 import 'category_filter_provider.dart';
 
+import 'package:go_router/go_router.dart';
+
+
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -69,8 +72,9 @@ class HomeScreen extends ConsumerWidget {
                   itemBuilder: (context, i) {
                     final ad = filteredAds[i];
                     return Card(
-                      child: ListTile(
+                      child: ListTile(  
                         title: Text(ad.title),
+                        onTap: () => context.go('/ad/${ad.id}'),
                         subtitle: Text(
                           '${_catLabel(ad.category)} • ${ad.price.toStringAsFixed(0)} €',
                         ),
