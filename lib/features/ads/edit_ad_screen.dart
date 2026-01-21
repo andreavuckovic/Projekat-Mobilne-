@@ -5,17 +5,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
-import 'ad_model.dart';
 import 'ads_provider.dart';
+import 'ad_model.dart';
 
-class AddAdScreen extends ConsumerStatefulWidget {
-  const AddAdScreen({super.key});
+class EditAdScreen extends ConsumerStatefulWidget {
+  final String adId;
+  const EditAdScreen({super.key, required this.adId});
 
   @override
-  ConsumerState<AddAdScreen> createState() => _AddAdScreenState();
+  ConsumerState<EditAdScreen> createState() => _EditAdScreenState();
 }
 
-class _AddAdScreenState extends ConsumerState<AddAdScreen> {
+class _EditAdScreenState extends ConsumerState<EditAdScreen> {
   final _formKey = GlobalKey<FormState>();
 
   final titleCtrl = TextEditingController();
@@ -25,6 +26,7 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
   final cityCtrl = TextEditingController();
 
   AdCategory cat = AdCategory.elektronika;
+  bool _inited = false;
 
   final _picker = ImagePicker();
   final List<Uint8List> _images = [];
@@ -50,10 +52,63 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
     setState(() {});
   }
 
+  Future<void> _confirmDelete(String adId) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Brisanje oglasa'),
+        content: const Text('Da li želiš da obrišeš ovaj oglas?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Ne'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Da'),
+          ),
+        ],
+      ),
+    );
+
+    if (ok == true) {
+      ref.read(adsProvider.notifier).deleteAdAsOwnerOrAdmin(adId);
+      if (mounted) context.go('/my-ads');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final ads = ref.watch(adsProvider);
+    final ad = ads.where((a) => a.id == widget.adId).firstOrNull;
+
+    if (ad == null) {
+      return const Scaffold(body: Center(child: Text('Oglas nije pronađen.')));
+    }
+
+    if (!_inited) {
+      titleCtrl.text = ad.title;
+      descCtrl.text = ad.description;
+      priceCtrl.text = ad.price.toStringAsFixed(0);
+      contactCtrl.text = ad.contact;
+      cityCtrl.text = ad.city;
+      cat = ad.category;
+      _images
+        ..clear()
+        ..addAll(ad.images);
+      _inited = true;
+    }
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Novi oglas')),
+      appBar: AppBar(
+        title: const Text('Izmeni oglas'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            onPressed: () => _confirmDelete(ad.id),
+          ),
+        ],
+      ),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -69,20 +124,18 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
                   (v == null || v.trim().isEmpty) ? 'Unesi naslov' : null,
             ),
             const SizedBox(height: 12),
-
             TextFormField(
               controller: descCtrl,
+              minLines: 2,
+              maxLines: 5,
               decoration: const InputDecoration(
                 labelText: 'Opis',
                 border: OutlineInputBorder(),
               ),
-              minLines: 2,
-              maxLines: 5,
               validator: (v) =>
                   (v == null || v.trim().isEmpty) ? 'Unesi opis' : null,
             ),
             const SizedBox(height: 12),
-
             TextFormField(
               controller: priceCtrl,
               keyboardType: TextInputType.number,
@@ -97,7 +150,6 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
               },
             ),
             const SizedBox(height: 12),
-
             TextFormField(
               controller: contactCtrl,
               decoration: const InputDecoration(
@@ -108,7 +160,6 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
                   (v == null || v.trim().isEmpty) ? 'Unesi kontakt' : null,
             ),
             const SizedBox(height: 12),
-
             TextFormField(
               controller: cityCtrl,
               decoration: const InputDecoration(
@@ -119,7 +170,6 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
                   (v == null || v.trim().isEmpty) ? 'Unesi grad' : null,
             ),
             const SizedBox(height: 12),
-
             DropdownButtonFormField<AdCategory>(
               value: cat,
               decoration: const InputDecoration(
@@ -127,17 +177,11 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
                 border: OutlineInputBorder(),
               ),
               items: AdCategory.values
-                  .map(
-                    (c) => DropdownMenuItem(
-                      value: c,
-                      child: Text(c.name),
-                    ),
-                  )
+                  .map((c) => DropdownMenuItem(value: c, child: Text(c.name)))
                   .toList(),
               onChanged: (v) => setState(() => cat = v ?? cat),
             ),
             const SizedBox(height: 16),
-
             Row(
               children: [
                 Expanded(
@@ -151,7 +195,6 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
                 Text('${_images.length} slika'),
               ],
             ),
-
             if (_images.isNotEmpty) ...[
               const SizedBox(height: 10),
               SizedBox(
@@ -167,7 +210,7 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
                           borderRadius: BorderRadius.circular(12),
                           child: Image.memory(
                             _images[i],
-                            width: 92,
+                            width: 92, 
                             height: 92,
                             fit: BoxFit.cover,
                           ),
@@ -199,16 +242,15 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
                 ),
               ),
             ],
-
-            const SizedBox(height: 20),
-
+            const SizedBox(height: 16),
             ElevatedButton.icon(
-              icon: const Icon(Icons.check),
-              label: const Text('Sačuvaj oglas'),
+              icon: const Icon(Icons.save),
+              label: const Text('Sačuvaj izmene'),
               onPressed: () {
                 if (!_formKey.currentState!.validate()) return;
 
-                ref.read(adsProvider.notifier).addAd(
+                ref.read(adsProvider.notifier).updateAd(
+                      id: ad.id,
                       title: titleCtrl.text.trim(),
                       description: descCtrl.text.trim(),
                       category: cat,
@@ -218,7 +260,7 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
                       images: List<Uint8List>.from(_images),
                     );
 
-                context.go('/');
+                context.go('/my-ads');
               },
             ),
           ],
@@ -226,4 +268,8 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
       ),
     );
   }
+}
+
+extension _FirstOrNull<T> on Iterable<T> {
+  T? get firstOrNull => isEmpty ? null : first;
 }

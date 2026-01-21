@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../features/auth/auth_provider.dart';
 import 'ads_provider.dart';
@@ -15,6 +16,34 @@ class MyAdsScreen extends ConsumerWidget {
         AdCategory.usluge => 'Usluge',
         AdCategory.ostalo => 'Ostalo',
       };
+
+  Future<void> _confirmDelete(
+    BuildContext context,
+    WidgetRef ref,
+    String adId,
+  ) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Brisanje oglasa'),
+        content: const Text('Da li želiš da obrišeš ovaj oglas?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Ne'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Da'),
+          ),
+        ],
+      ),
+    );
+
+    if (ok == true) {
+      ref.read(adsProvider.notifier).deleteAdAsOwnerOrAdmin(adId);
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -37,11 +66,27 @@ class MyAdsScreen extends ConsumerWidget {
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, i) {
         final ad = myAds[i];
+
         return Card(
           child: ListTile(
             title: Text(ad.title),
             subtitle: Text(
               '${_catLabel(ad.category)} • ${ad.price.toStringAsFixed(0)} €',
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  tooltip: 'Izmeni',
+                  icon: const Icon(Icons.edit),
+                  onPressed: () => context.go('/edit/${ad.id}'),
+                ),
+                IconButton(
+                  tooltip: 'Obriši',
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () => _confirmDelete(context, ref, ad.id),
+                ),
+              ],
             ),
           ),
         );

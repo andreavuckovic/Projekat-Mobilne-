@@ -17,6 +17,10 @@ import '../features/ads/ad_details_screen.dart';
 
 import '../shared/main_shell.dart';
 
+import '../features/ads/edit_ad_screen.dart'; 
+
+
+
 
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -52,10 +56,18 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
           GoRoute(path: '/add', builder: (context, state) => const AddAdScreen()),
           GoRoute(path: '/my-ads', builder: (context, state) => const MyAdsScreen()),
+             
+          GoRoute(
+            path: '/ad/:id',
+            builder: (context, state) {
+            final id = state.pathParameters['id']!;
+            return AdDetailsScreen(adId: id);
+      },
+    ),
         ],
       ),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
-
+ 
       GoRoute(
         path: '/admin',
         builder: (context, state) => const AdminDashboardScreen(),
@@ -71,6 +83,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         return AdDetailsScreen(adId: id);
           },
         ),
+        GoRoute(
+  path: '/edit/:id',
+  builder: (context, state) {
+    final id = state.pathParameters['id']!;
+    return EditAdScreen(adId: id);
+  },
+),
+
 
       
     ],

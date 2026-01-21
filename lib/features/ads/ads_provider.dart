@@ -23,6 +23,9 @@ class AdsController extends Notifier<List<Ad>> {
         category: AdCategory.elektronika,
         price: 220,
         ownerId: 'demoOwner1',
+        ownerName: 'Korisnik 1',
+        contact: '060/123-456',
+        city: 'Beograd - Vozdovac',
       ),
       Ad(
         id: '2',
@@ -31,7 +34,10 @@ class AdsController extends Notifier<List<Ad>> {
         category: AdCategory.namestaj,
         price: 80,
         ownerId: 'demoOwner2',
-      ),
+        ownerName: 'Korisnik 2',
+        contact: 'petarpetrovic15@gmail.com',
+        city: 'Novi Sad', 
+      ), 
     ];
   }
 
@@ -41,6 +47,9 @@ class AdsController extends Notifier<List<Ad>> {
     required AdCategory category,
     required double price,
     List<Uint8List> images = const [],
+    required String contact,
+    required String city,
+    
   }) {
     final auth = ref.read(authProvider);
     if (!auth.isLoggedIn) return;
@@ -53,6 +62,9 @@ class AdsController extends Notifier<List<Ad>> {
       price: price,
       ownerId: auth.user!.id,
       images: images,
+      ownerName: auth.user!.displayName,
+      contact: contact,
+      city: city,
     );
 
     state = [newAd, ...state];
@@ -68,8 +80,46 @@ class AdsController extends Notifier<List<Ad>> {
 
     state = state.where((a) => a.id != adId).toList();
   }
+  
+  void deleteAd(String id) {
+  state = state.where((a) => a.id != id).toList();
+}
+
+void updateAd({
+  required String id,
+  required String title,
+  required String description,
+  required AdCategory category,
+  required double price,
+  required String contact,
+  required String city,
+  required List<Uint8List> images,
+}) { 
+  state = [
+    for (final a in state)
+      if (a.id == id)
+        a.copyWith(
+          title: title,
+          description: description,
+          category: category,
+          price: price,
+          contact: contact,
+          city: city,
+          images: images,
+        )
+      else
+        a,
+  ];
+}
+
 }
 
 extension _FirstOrNull<T> on Iterable<T> {
   T? get firstOrNull => isEmpty ? null : first;
+
+
+  
+
+
+
 }

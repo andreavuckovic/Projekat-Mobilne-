@@ -9,6 +9,9 @@ class Ad {
   final AdCategory category;
   final double price;
   final String ownerId;
+  final String ownerName;
+  final String contact;
+  final String city;
 
   final List<Uint8List> images;
 
@@ -20,6 +23,9 @@ class Ad {
     required this.price,
     required this.ownerId,
     this.images = const [],
+    required this.ownerName,
+    required this.contact,
+    required this.city,
 
   });
 
@@ -29,6 +35,9 @@ class Ad {
     AdCategory? category,
     double? price,
     List<Uint8List>? images,
+    String? ownerName,
+    String? contact,
+    String? city,
   }) {
     return Ad( 
       id: id,
@@ -38,6 +47,9 @@ class Ad {
       price: price ?? this.price,
       ownerId: ownerId,
       images: images ?? this.images,
+      ownerName: ownerName ?? this.ownerName,
+      contact: contact ?? this.contact,
+      city: city ?? this.city,
     );
   }
 }

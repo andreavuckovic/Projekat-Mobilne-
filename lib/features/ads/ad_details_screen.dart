@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'ads_provider.dart';
 import 'ad_model.dart';
@@ -28,11 +29,16 @@ class AdDetailsScreen extends ConsumerWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(ad.title)),
-      
-      body: ListView(
+      appBar: AppBar(
+      title: Text(ad.title),
+      leading: IconButton(
+      icon: const Icon(Icons.arrow_back),
+      onPressed: () => context.go('/'),
+        ),
+      ),
+    body: ListView(
         children: [ 
-          if (ad.images.isNotEmpty)
+          if (ad.images.isNotEmpty) 
             SizedBox(
               height: 280,
               child: PageView.builder(
@@ -63,6 +69,11 @@ class AdDetailsScreen extends ConsumerWidget {
                   ad.description,
                   style: Theme.of(context).textTheme.bodyLarge,
                 ),
+                const SizedBox(height: 16),
+
+              Text('Postavio: ${ad.ownerName}'),
+              Text('Grad: ${ad.city}'),
+               Text('Kontakt: ${ad.contact}'),      
               ],
             ),
           ),
