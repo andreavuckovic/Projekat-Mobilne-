@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:skriptarnica/features/currency/currency_format.dart';
+import 'package:skriptarnica/features/currency/currency_provider.dart';
 
 import '../../features/auth/auth_provider.dart';
 import 'ads_provider.dart';
@@ -36,7 +38,7 @@ class MyAdsScreen extends ConsumerWidget {
             onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('Da'),
           ),
-        ],
+        ], 
       ),
     );
 
@@ -49,6 +51,7 @@ class MyAdsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider).user;
     final ads = ref.watch(adsProvider);
+    final currency = ref.watch(currencyProvider);
 
     if (user == null) {
       return const Center(child: Text('Nisi ulogovana.'));
@@ -71,13 +74,13 @@ class MyAdsScreen extends ConsumerWidget {
           child: ListTile(
             title: Text(ad.title),
             subtitle: Text(
-              '${_catLabel(ad.category)} • ${ad.price.toStringAsFixed(0)} €',
+              '${_catLabel(ad.category)} • ${formatPrice(ad.price, currency)}',
             ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
-              children: [
+              children: [ 
                 IconButton(
-                  tooltip: 'Izmeni', 
+                  tooltip: 'Izmeni',
                   icon: const Icon(Icons.edit),
                   onPressed: () => context.push('/edit/${ad.id}'),
                 ),
@@ -93,4 +96,4 @@ class MyAdsScreen extends ConsumerWidget {
       },
     );
   }
-}
+} 

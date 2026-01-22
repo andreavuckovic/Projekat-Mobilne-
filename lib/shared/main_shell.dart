@@ -5,6 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../features/auth/auth_provider.dart';
 import '../features/auth/auth_state.dart';
 
+import '../features/currency/currency_provider.dart';
+
+
 class MainShell extends ConsumerWidget {
   final Widget child;
   final String location;
@@ -35,6 +38,7 @@ class MainShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authProvider);
+    final currency = ref.watch(currencyProvider);
 
     final currentIndex = _indexForLocation(location);
 
@@ -46,11 +50,16 @@ class MainShell extends ConsumerWidget {
       }
     }
 
-    return Scaffold( 
+    return Scaffold(
       appBar: AppBar(
         centerTitle: true,
         title: Text('QuickAds • ${_roleLabel(auth.role)}'),
         actions: [
+          IconButton(
+            tooltip: currency == Currency.eur ? 'EUR' : 'RSD',
+            onPressed: () => ref.read(currencyProvider.notifier).toggle(),
+            icon: const Icon(Icons.currency_exchange),
+          ),
           if (auth.role == UserRole.admin)
             IconButton(
               tooltip: 'Admin panel',
@@ -60,7 +69,7 @@ class MainShell extends ConsumerWidget {
           if (!auth.isLoggedIn)
             TextButton(
               onPressed: () => context.go('/login'),
-              child: const Text('Login'), 
+              child: const Text('Login'),
             )
           else
             TextButton(
@@ -72,7 +81,7 @@ class MainShell extends ConsumerWidget {
             ),
         ],
       ),
-      body: child, 
+      body: child,
       bottomNavigationBar: NavigationBar(
         selectedIndex: currentIndex,
         onDestinationSelected: (i) {
@@ -89,4 +98,3 @@ class MainShell extends ConsumerWidget {
     );
   }
 }
- 

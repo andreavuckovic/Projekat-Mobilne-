@@ -16,7 +16,7 @@ class AdsController extends Notifier<List<Ad>> {
 
   @override
   List<Ad> build() {
-    if (!_demoLoaded) {
+    if (!_demoLoaded) { 
       _demoLoaded = true;
 
       state = const [
@@ -153,7 +153,7 @@ class AdsController extends Notifier<List<Ad>> {
   Future<void> _loadDemoImages() async {
     final iphoneImgs = await _loadMany([
       'assets/ads/iphone11_1.jpg',
-      'assets/ads/iphone11_2.jpg',
+      'assets/ads/iphone11_2.jpg',  
     ]);
 
     final couchImgs = await _loadMany([
@@ -169,8 +169,8 @@ class AdsController extends Notifier<List<Ad>> {
     ]);
 
     final lenovoImgs = await _loadMany([
+      'assets/ads/lenovo2.jpg', 
       'assets/ads/lenovo1.webp',
-      'assets/ads/lenovo1.jpg',
     ]);
 
     final tableImgs = await _loadMany([
@@ -187,7 +187,7 @@ class AdsController extends Notifier<List<Ad>> {
     ]);
 
     final dressImgs = await _loadMany([
-      'assets/ads/haljina1.webp',
+      'assets/ads/haljina1.jpg',
     ]);
 
     state = [
