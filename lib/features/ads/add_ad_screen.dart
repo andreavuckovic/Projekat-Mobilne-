@@ -8,6 +8,9 @@ import 'package:image_picker/image_picker.dart';
 import 'ad_model.dart';
 import 'ads_provider.dart';
 
+import '../auth/auth_provider.dart';
+import 'ads_repo_provider.dart';
+
 class AddAdScreen extends ConsumerStatefulWidget {
   const AddAdScreen({super.key});
 
@@ -20,7 +23,7 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
 
   final titleCtrl = TextEditingController();
   final descCtrl = TextEditingController();
-  final priceCtrl = TextEditingController();
+  final priceCtrl = TextEditingController(); 
   final contactCtrl = TextEditingController();
   final cityCtrl = TextEditingController();
 
@@ -34,7 +37,7 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
     titleCtrl.dispose();
     descCtrl.dispose();
     priceCtrl.dispose();
-    contactCtrl.dispose();
+    contactCtrl.dispose(); 
     cityCtrl.dispose();
     super.dispose();
   }
@@ -203,24 +206,39 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
             const SizedBox(height: 20),
 
             ElevatedButton.icon(
-              icon: const Icon(Icons.check),
-              label: const Text('Sačuvaj oglas'),
-              onPressed: () {
-                if (!_formKey.currentState!.validate()) return;
+  icon: const Icon(Icons.check),
+  label: const Text('Sačuvaj oglas'),
+  onPressed: () async {
+    if (!_formKey.currentState!.validate()) return;
 
-                ref.read(adsProvider.notifier).addAd(
-                      title: titleCtrl.text.trim(),
-                      description: descCtrl.text.trim(),
-                      category: cat,
-                      price: double.parse(priceCtrl.text.trim()),
-                      contact: contactCtrl.text.trim(),
-                      city: cityCtrl.text.trim(),
-                      images: List<Uint8List>.from(_images),
-                    );
+    final auth = ref.read(authProvider);
+    final repo = ref.read(adsRepoProvider);
 
-                context.go('/');
-              },
-            ),
+    if (auth.user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Moraš biti ulogovana.')),
+      );
+      return;
+    }
+
+    await repo.add(
+      Ad(
+        id: '', 
+        title: titleCtrl.text.trim(),
+        description: descCtrl.text.trim(),
+        category: cat,
+        price: double.parse(priceCtrl.text.trim()),
+        ownerId: auth.user!.id,
+        ownerName: auth.user!.displayName,
+        contact: contactCtrl.text.trim(),
+        city: cityCtrl.text.trim(), 
+        images: const [],
+      ),
+    );
+
+    if (mounted) context.go('/');
+  },
+),
           ],
         ),
       ),

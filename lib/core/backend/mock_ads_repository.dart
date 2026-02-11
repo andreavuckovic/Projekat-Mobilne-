@@ -12,7 +12,7 @@ class MockAdsRepository implements AdsRepository {
 
   @override
   Future<List<Ad>> getMyAds(String userId) async {
-    return _ads.where((a) => a.ownerId == userId).toList();
+    return _ads.where((a) => a.ownerId == userId).toList(); 
   }
 
   @override
@@ -27,7 +27,7 @@ class MockAdsRepository implements AdsRepository {
   }
 
   @override
-  Future<void> deleteAd(String adId) async {
+  Future<void> deleteAd(String adId) async { 
     _ads.removeWhere((a) => a.id == adId);
   }
 }

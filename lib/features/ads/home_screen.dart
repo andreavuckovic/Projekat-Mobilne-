@@ -32,66 +32,75 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final ads = ref.watch(adsProvider);
-    final selectedCategory = ref.watch(categoryFilterProvider);
-    final currency = ref.watch(currencyProvider);
+    final adsAsync = ref.watch(adsStreamProvider);
 
-    final filteredAds = selectedCategory == null
-        ? ads
-        : ads.where((a) => a.category == selectedCategory).toList();
+    return adsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Greška: $e')),
+      data: (ads) {
+        final selectedCategory = ref.watch(categoryFilterProvider);
+        final currency = ref.watch(currencyProvider);
 
-    return Column(
-      children: [
-        SizedBox(
-          height: 56,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            children: [
-              ChoiceChip(
-                label: const Text('Sve'),
-                selected: selectedCategory == null,
-                onSelected: (_) =>
-                    ref.read(categoryFilterProvider.notifier).setCategory(null),
-              ),
-              const SizedBox(width: 8),
-              ...AdCategory.values.map(
-                (c) => Padding( 
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    avatar: Icon(_catIcon(c), size: 18),
-                    label: Text(_catLabel(c)),
-                    selected: selectedCategory == c,
-                    onSelected: (_) =>
-                        ref.read(categoryFilterProvider.notifier).setCategory(c),
+        final filteredAds = selectedCategory == null
+            ? ads
+            : ads.where((a) => a.category == selectedCategory).toList();
+
+        return Column(
+          children: [
+            SizedBox(
+              height: 56,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                children: [
+                  ChoiceChip(
+                    label: const Text('Sve'),
+                    selected: selectedCategory == null,
+                    onSelected: (_) => ref
+                        .read(categoryFilterProvider.notifier)
+                        .setCategory(null),
                   ),
-                ),
+                  const SizedBox(width: 8),
+                  ...AdCategory.values.map(
+                    (c) => Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        avatar: Icon(_catIcon(c), size: 18),
+                        label: Text(_catLabel(c)),
+                        selected: selectedCategory == c,
+                        onSelected: (_) => ref
+                            .read(categoryFilterProvider.notifier)
+                            .setCategory(c),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
-        Expanded(
-          child: filteredAds.isEmpty
-              ? const Center(child: Text('Nema oglasa u ovoj kategoriji.'))
-              : ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                  itemCount: filteredAds.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (context, i) {
-                    final ad = filteredAds[i];
-                    return _AdCard(
-                      title: ad.title,
-                      priceText: formatPrice(ad.price, currency),
-                      city: ad.city,
-                      categoryLabel: _catLabel(ad.category),
-                      image: ad.images.isNotEmpty ? ad.images.first : null,
-                      onTap: () => context.go('/ad/${ad.id}'),
-                    );
-                  },
-                ),
-        ),
-      ],
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: filteredAds.isEmpty
+                  ? const Center(child: Text('Nema oglasa u ovoj kategoriji.'))
+                  : ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                      itemCount: filteredAds.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, i) {
+                        final ad = filteredAds[i];
+                        return _AdCard(
+                          title: ad.title,
+                          priceText: formatPrice(ad.price, currency),
+                          city: ad.city,
+                          categoryLabel: _catLabel(ad.category), 
+                          image: ad.images.isNotEmpty ? ad.images.first : null,
+                          onTap: () => context.go('/ad/${ad.id}'),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -137,8 +146,7 @@ class _AdCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ClipRRect(
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(18)),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
               child: AspectRatio(
                 aspectRatio: 16 / 9,
                 child: image == null
@@ -181,7 +189,9 @@ class _AdCard extends StatelessWidget {
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 6),
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(999),
                           color: theme.colorScheme.surfaceContainerHighest,

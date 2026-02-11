@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:skriptarnica/features/ads/ads_repo_provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../auth/auth_provider.dart';
@@ -265,7 +266,7 @@ class AdsController extends Notifier<List<Ad>> {
   }) {
     state = [
       for (final a in state)
-        if (a.id == id)
+        if (a.id == id) 
           a.copyWith(
             title: title,
             description: description,
@@ -284,3 +285,17 @@ class AdsController extends Notifier<List<Ad>> {
 extension _FirstOrNull<T> on Iterable<T> {
   T? get firstOrNull => isEmpty ? null : first;
 }
+
+final adsStreamProvider = StreamProvider.autoDispose((ref) {
+  final repo = ref.watch(adsRepoProvider);
+  return repo.watchAll();
+});
+
+final myAdsStreamProvider = StreamProvider.autoDispose((ref) {
+  final repo = ref.watch(adsRepoProvider);
+  final user = ref.watch(authProvider).user;
+  if (user == null) {
+    return const Stream<List<Ad>>.empty();
+  }
+  return repo.watchMy(user.id);
+});

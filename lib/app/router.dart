@@ -16,12 +16,14 @@ import '../features/admin/manage_ads_screen.dart';
 import '../features/admin/manage_users_screen.dart';
 
 import '../shared/main_shell.dart';
+ 
+import '../features/auth/register_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final auth = ref.watch(authProvider);
 
   return GoRouter(
-    initialLocation: '/', 
+    initialLocation: '/',  
     redirect: (context, state) {
       final loc = state.matchedLocation;
 
@@ -67,7 +69,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/edit/:id',
             builder: (context, state) {
               final id = state.pathParameters['id']!;
-              return EditAdScreen(adId: id);
+              return EditAdScreen(adId: id); 
             },
           ),
         ],
@@ -77,10 +79,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const LoginScreen(),
       ),
       GoRoute(
+        path: '/register',
+        builder: (context, state) => const RegisterScreen(),
+      ),
+      GoRoute(
         path: '/admin',
         builder: (context, state) => const AdminDashboardScreen(),
         routes: [
-          GoRoute(
+          GoRoute( 
             path: 'ads',
             builder: (context, state) => const ManageAdsScreen(),
           ),

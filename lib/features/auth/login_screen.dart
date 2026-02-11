@@ -64,14 +64,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
             const SizedBox(height: 8),
             OutlinedButton(
-              onPressed: loading ? null : () => _run(() =>
-                ref.read(authProvider.notifier).register(emailCtrl.text.trim(), passCtrl.text.trim())
-              ),
-              child: const Text('Register'),
-            ),
-          ],
-        ), 
+            onPressed: () => context.push('/register'),
+            child: const Text('Register'),
+          ),
+        ],
       ),
-    );
-  }
-}
+    ),
+  );
+} 
+} 
