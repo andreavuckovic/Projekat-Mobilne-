@@ -11,7 +11,7 @@ import '../features/currency/currency_provider.dart';
 class MainShell extends ConsumerWidget {
   final Widget child;
   final String location;
-
+ 
   const MainShell({
     super.key,
     required this.child,

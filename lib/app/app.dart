@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme.dart';
 import 'router.dart';
 
-class QuickAdsApp extends ConsumerWidget {
+class QuickAdsApp extends ConsumerWidget { 
   const QuickAdsApp({super.key});
 
   @override
@@ -16,4 +16,4 @@ class QuickAdsApp extends ConsumerWidget {
       routerConfig: router,
     );
   }
-}
+} 

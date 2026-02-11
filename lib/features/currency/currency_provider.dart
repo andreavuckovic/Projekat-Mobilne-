@@ -9,7 +9,7 @@ class CurrencyController extends Notifier<Currency> {
   @override
   Currency build() => Currency.eur;
 
-  void toggle() {
+  void toggle() { 
     state = state == Currency.eur ? Currency.rsd : Currency.eur;
   }
 

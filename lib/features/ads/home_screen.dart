@@ -56,7 +56,7 @@ class HomeScreen extends ConsumerWidget {
               ),
               const SizedBox(width: 8),
               ...AdCategory.values.map(
-                (c) => Padding(
+                (c) => Padding( 
                   padding: const EdgeInsets.only(right: 8),
                   child: ChoiceChip(
                     avatar: Icon(_catIcon(c), size: 18),

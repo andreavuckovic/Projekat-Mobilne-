@@ -7,7 +7,7 @@ class AppUser {
   final UserRole role;
 
   const AppUser({
-    required this.id,
+    required this.id, 
     required this.email,
     required this.displayName,
     required this.role,
@@ -18,7 +18,7 @@ class AuthState {
   final AppUser? user;
 
   const AuthState({required this.user});
-  const AuthState.guest() : user = null;
+  const AuthState.guest() : user = null; 
 
   UserRole get role => user?.role ?? UserRole.guest;
   bool get isLoggedIn => user != null;

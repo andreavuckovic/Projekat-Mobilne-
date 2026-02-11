@@ -11,3 +11,5 @@ class CategoryFilterController extends Notifier<AdCategory?> {
   void setCategory(AdCategory? c) => state = c;
 }
  
+
+ 

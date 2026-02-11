@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "850410387723",
+    "project_id": "quickads-6798e",
+    "storage_bucket": "quickads-6798e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:850410387723:android:0e1438e7d962a11d590a0e",
+        "android_client_info": {
+          "package_name": "com.example.skriptarnica"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "850410387723-jofc9asv2dc185v08uqil4132q0d45q7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDcMCVoGAEbpIsEJ7CkYYrEu5lZo1BaN-I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "850410387723-jofc9asv2dc185v08uqil4132q0d45q7.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

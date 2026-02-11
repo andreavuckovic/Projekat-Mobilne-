@@ -12,12 +12,28 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final emailCtrl = TextEditingController(text: 'test@mail.com');
+  final emailCtrl = TextEditingController();
+  final passCtrl = TextEditingController();
+  bool loading = false;
+  String? err;
 
   @override
   void dispose() {
     emailCtrl.dispose();
+    passCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _run(Future<void> Function() action) async {
+    setState(() { loading = true; err = null; });
+    try {
+      await action();
+      if (mounted) context.go('/');
+    } catch (e) {
+      setState(() => err = e.toString());
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
   }
 
   @override
@@ -28,32 +44,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
+            TextField(controller: emailCtrl, decoration: const InputDecoration(labelText: 'Email')),
+            const SizedBox(height: 10),
             TextField(
-              controller: emailCtrl,
-              decoration: const InputDecoration(labelText: 'Email'),
+              controller: passCtrl, 
+              obscureText: true,
+              decoration: const InputDecoration(labelText: 'Password'),
             ),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: () {
-                ref
-                    .read(authProvider.notifier)
-                    .loginAsUser(emailCtrl.text.trim());
-                context.go('/');
-              },
-              child: const Text('Login as User'),
+            const SizedBox(height: 14),
+
+            if (err != null) Text(err!, style: const TextStyle(color: Colors.red)),
+            const SizedBox(height: 10),
+
+            ElevatedButton( 
+              onPressed: loading ? null : () => _run(() =>
+                ref.read(authProvider.notifier).login(emailCtrl.text.trim(), passCtrl.text.trim())
+              ),
+              child: Text(loading ? '...' : 'Login'),
             ),
             const SizedBox(height: 8),
-            ElevatedButton(
-              onPressed: () {
-                ref
-                    .read(authProvider.notifier)
-                    .loginAsAdmin(emailCtrl.text.trim());
-                context.go('/');
-              }, 
-              child: const Text('Login as Admin'),
+            OutlinedButton(
+              onPressed: loading ? null : () => _run(() =>
+                ref.read(authProvider.notifier).register(emailCtrl.text.trim(), passCtrl.text.trim())
+              ),
+              child: const Text('Register'),
             ),
           ],
-        ),
+        ), 
       ),
     );
   }

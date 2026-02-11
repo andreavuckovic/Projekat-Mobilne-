@@ -51,7 +51,7 @@ class ManageAdsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Svi oglasi'),
-        leading: IconButton(
+        leading: IconButton( 
           icon: const Icon(Icons.arrow_back),
             onPressed: () {
             if (Navigator.of(context).canPop()) {
