@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:skriptarnica/features/currency/currency_format.dart';
-import 'package:skriptarnica/features/currency/currency_provider.dart';
 
 import 'ads_provider.dart';
 import 'ad_model.dart';
+
+import '../currency/currency_provider.dart';
+import '../currency/currency_format.dart';
 
 class AdDetailsScreen extends ConsumerStatefulWidget {
   final String adId;
@@ -28,127 +29,145 @@ class _AdDetailsScreenState extends ConsumerState<AdDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final ads = ref.watch(adsProvider);
-    final currency = ref.watch(currencyProvider); 
-    final ad = ads.where((a) => a.id == widget.adId).firstOrNull;
+    final adsAsync = ref.watch(adsStreamProvider);
+    final currency = ref.watch(currencyProvider);
 
-    if (ad == null) {
-      return const Scaffold(
-        body: Center(child: Text('Oglas nije pronađen.')),
-      );
-    }
-
-    final theme = Theme.of(context);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(ad.title),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/'),
-        ),
+    return adsAsync.when(
+      loading: () => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
       ),
-      body: ListView(
-        children: [
-          if (ad.images.isNotEmpty)
-            Stack(
-              children: [
-                SizedBox(
-                  height: 300,
-                  child: PageView.builder(
-                    itemCount: ad.images.length,
-                    onPageChanged: (i) => setState(() => _page = i),
-                    itemBuilder: (_, i) => Image.memory(
-                      ad.images[i],
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                    ),
-                  ),
-                ),
-                Positioned(
-                  left: 16,
-                  bottom: 12,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(999),
-                      color: Colors.black.withOpacity(0.55),
-                    ),
-                    child: Text(
-                      '${_page + 1}/${ad.images.length}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            )
-          else
-            Container(
-              height: 240,
-              alignment: Alignment.center,
-              color: theme.colorScheme.surfaceContainerHighest,
-              child: const Icon(Icons.image_not_supported, size: 60),
+      error: (e, _) => Scaffold(
+        body: Center(child: Text('Greška: $e')),
+      ),
+      data: (ads) {
+        final ad = ads.where((a) => a.id == widget.adId).firstOrNull;
+
+        if (ad == null) {
+          return const Scaffold(
+            body: Center(child: Text('Oglas nije pronađen.')),
+          );
+        }
+
+        final theme = Theme.of(context);
+
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(ad.title),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () => context.go('/'),
             ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          ),
+          body: ListView(
+            children: [
+              if (ad.imageUrls.isNotEmpty)
+                Stack(
                   children: [
-                    Text(
-                      formatPrice(ad.price, currency),
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.w900,
+                    SizedBox(
+                      height: 300,
+                      child: PageView.builder(
+                        itemCount: ad.imageUrls.length,
+                        onPageChanged: (i) => setState(() => _page = i),
+                        itemBuilder: (_, i) => Image.network(
+                          ad.imageUrls[i],
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          errorBuilder: (_, __, ___) => Container(
+                            alignment: Alignment.center,
+                            color: theme.colorScheme.surfaceContainerHighest,
+                            child: const Icon(Icons.broken_image, size: 60),
+                          ),
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 12), 
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(999),
-                        color: theme.colorScheme.surfaceContainerHighest,
-                      ),
-                      child: Text(
-                        _catLabel(ad.category),
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
+                    Positioned(
+                      left: 16,
+                      bottom: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(999),
+                          color: Colors.black.withOpacity(0.55),
+                        ),
+                        child: Text(
+                          '${_page + 1}/${ad.imageUrls.length}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
                   ],
+                )
+              else
+                Container(
+                  height: 240,
+                  alignment: Alignment.center,
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  child: const Icon(Icons.image_not_supported, size: 60),
                 ),
-                const SizedBox(height: 14),
-                Text(
-                  ad.description,
-                  style: theme.textTheme.bodyLarge?.copyWith(height: 1.35),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          formatPrice(ad.price, currency),
+                          style: theme.textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(999),
+                            color: theme.colorScheme.surfaceContainerHighest,
+                          ),
+                          child: Text(
+                            _catLabel(ad.category),
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      ad.description,
+                      style: theme.textTheme.bodyLarge?.copyWith(height: 1.35),
+                    ),
+                    const SizedBox(height: 18),
+                    _InfoTile(
+                      icon: Icons.person_outline,
+                      label: 'Postavio',
+                      value: ad.ownerName,
+                    ),
+                    const SizedBox(height: 10),
+                    _InfoTile(
+                      icon: Icons.location_on_outlined,
+                      label: 'Grad',
+                      value: ad.city,
+                    ),
+                    const SizedBox(height: 10),
+                    _InfoTile(
+                      icon: Icons.call_outlined,
+                      label: 'Kontakt',
+                      value: ad.contact,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 18),
-                _InfoTile(
-                  icon: Icons.person_outline,
-                  label: 'Postavio',
-                  value: ad.ownerName,
-                ),
-                const SizedBox(height: 10),
-                _InfoTile(
-                  icon: Icons.location_on_outlined,
-                  label: 'Grad',
-                  value: ad.city,
-                ),
-                const SizedBox(height: 10),
-                _InfoTile(
-                  icon: Icons.call_outlined,
-                  label: 'Kontakt',
-                  value: ad.contact,
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -180,7 +199,8 @@ class _InfoTile extends StatelessWidget {
           const SizedBox(width: 10),
           Text(
             '$label:',
-            style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+            style:
+                theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(width: 8),
           Expanded(

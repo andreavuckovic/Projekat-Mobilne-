@@ -1,14 +1,9 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
-
-import 'ad_model.dart';
-import 'ads_provider.dart';
 
 import '../auth/auth_provider.dart';
+import 'ad_model.dart';
 import 'ads_repo_provider.dart';
 
 class AddAdScreen extends ConsumerStatefulWidget {
@@ -23,45 +18,84 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
 
   final titleCtrl = TextEditingController();
   final descCtrl = TextEditingController();
-  final priceCtrl = TextEditingController(); 
+  final priceCtrl = TextEditingController();
   final contactCtrl = TextEditingController();
   final cityCtrl = TextEditingController();
+  final imageUrlCtrl = TextEditingController();
 
   AdCategory cat = AdCategory.elektronika;
 
-  final _picker = ImagePicker();
-  final List<Uint8List> _images = [];
+  bool saving = false;
 
   @override
   void dispose() {
     titleCtrl.dispose();
     descCtrl.dispose();
     priceCtrl.dispose();
-    contactCtrl.dispose(); 
+    contactCtrl.dispose();
     cityCtrl.dispose();
+    imageUrlCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _pickImages() async {
-    final files = await _picker.pickMultiImage(imageQuality: 80);
-    if (files.isEmpty) return;
+  bool _looksLikeUrl(String s) {
+    final v = s.trim();
+    return v.startsWith('http://') || v.startsWith('https://');
+  }
 
-    for (final f in files) {
-      final bytes = await f.readAsBytes();
-      _images.add(bytes);
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final auth = ref.read(authProvider);
+    if (auth.user == null) return;
+
+    setState(() => saving = true);
+
+    final repo = ref.read(adsRepoProvider);
+
+    try {
+      final url = imageUrlCtrl.text.trim();
+      final urls = url.isEmpty ? const <String>[] : <String>[url];
+
+      final ad = Ad(
+        id: '',
+        title: titleCtrl.text.trim(),
+        description: descCtrl.text.trim(),
+        category: cat,
+        price: double.parse(priceCtrl.text.trim()),
+        ownerId: auth.user!.id,
+        ownerName: auth.user!.displayName,
+        contact: contactCtrl.text.trim(),
+        city: cityCtrl.text.trim(),
+        images: const [],
+        imageUrls: urls,
+      );
+
+      await repo.add(ad);
+
+      if (mounted) context.go('/');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Greška: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => saving = false);
     }
-    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
+    final previewUrl = imageUrlCtrl.text.trim();
+
     return Scaffold(
       appBar: AppBar(title: const Text('Novi oglas')),
       body: Form(
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(16),
-          children: [
+          children: [ 
             TextFormField(
               controller: titleCtrl,
               decoration: const InputDecoration(
@@ -72,7 +106,6 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
                   (v == null || v.trim().isEmpty) ? 'Unesi naslov' : null,
             ),
             const SizedBox(height: 12),
-
             TextFormField(
               controller: descCtrl,
               decoration: const InputDecoration(
@@ -85,7 +118,6 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
                   (v == null || v.trim().isEmpty) ? 'Unesi opis' : null,
             ),
             const SizedBox(height: 12),
-
             TextFormField(
               controller: priceCtrl,
               keyboardType: TextInputType.number,
@@ -100,7 +132,6 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
               },
             ),
             const SizedBox(height: 12),
-
             TextFormField(
               controller: contactCtrl,
               decoration: const InputDecoration(
@@ -111,7 +142,6 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
                   (v == null || v.trim().isEmpty) ? 'Unesi kontakt' : null,
             ),
             const SizedBox(height: 12),
-
             TextFormField(
               controller: cityCtrl,
               decoration: const InputDecoration(
@@ -122,7 +152,6 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
                   (v == null || v.trim().isEmpty) ? 'Unesi grad' : null,
             ),
             const SizedBox(height: 12),
-
             DropdownButtonFormField<AdCategory>(
               value: cat,
               decoration: const InputDecoration(
@@ -130,115 +159,51 @@ class _AddAdScreenState extends ConsumerState<AddAdScreen> {
                 border: OutlineInputBorder(),
               ),
               items: AdCategory.values
-                  .map(
-                    (c) => DropdownMenuItem(
-                      value: c,
-                      child: Text(c.name),
-                    ),
-                  )
+                  .map((c) => DropdownMenuItem(value: c, child: Text(c.name)))
                   .toList(),
               onChanged: (v) => setState(() => cat = v ?? cat),
             ),
-            const SizedBox(height: 16),
-
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _pickImages,
-                    icon: const Icon(Icons.photo_library),
-                    label: const Text('Dodaj slike'),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: imageUrlCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Image URL (opciono)',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.url,
+              onChanged: (_) => setState(() {}),
+              validator: (v) {
+                final s = (v ?? '').trim();
+                if (s.isEmpty) return null;
+                if (!_looksLikeUrl(s)) return 'Unesi http/https link';
+                return null;
+              },
+            ),
+            const SizedBox(height: 12),
+            if (previewUrl.isNotEmpty && _looksLikeUrl(previewUrl))
+              ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: AspectRatio(
+                  aspectRatio: 16 / 9,
+                  child: Image.network(
+                    previewUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      alignment: Alignment.center,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .surfaceContainerHighest,
+                      child: const Text('Ne mogu da učitam sliku'),
+                    ),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Text('${_images.length} slika'),
-              ],
-            ),
-
-            if (_images.isNotEmpty) ...[
-              const SizedBox(height: 10),
-              SizedBox(
-                height: 92,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _images.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 8),
-                  itemBuilder: (context, i) {
-                    return Stack(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.memory(
-                            _images[i],
-                            width: 92,
-                            height: 92,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        Positioned(
-                          right: 4,
-                          top: 4,
-                          child: InkWell(
-                            onTap: () {
-                              setState(() => _images.removeAt(i));
-                            },
-                            child: Container(
-                              decoration: const BoxDecoration(
-                                color: Colors.black54,
-                                shape: BoxShape.circle,
-                              ),
-                              padding: const EdgeInsets.all(4),
-                              child: const Icon(
-                                Icons.close,
-                                size: 16,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
               ),
-            ],
-
             const SizedBox(height: 20),
-
             ElevatedButton.icon(
-  icon: const Icon(Icons.check),
-  label: const Text('Sačuvaj oglas'),
-  onPressed: () async {
-    if (!_formKey.currentState!.validate()) return;
-
-    final auth = ref.read(authProvider);
-    final repo = ref.read(adsRepoProvider);
-
-    if (auth.user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Moraš biti ulogovana.')),
-      );
-      return;
-    }
-
-    await repo.add(
-      Ad(
-        id: '', 
-        title: titleCtrl.text.trim(),
-        description: descCtrl.text.trim(),
-        category: cat,
-        price: double.parse(priceCtrl.text.trim()),
-        ownerId: auth.user!.id,
-        ownerName: auth.user!.displayName,
-        contact: contactCtrl.text.trim(),
-        city: cityCtrl.text.trim(), 
-        images: const [],
-      ),
-    );
-
-    if (mounted) context.go('/');
-  },
-),
+              icon: const Icon(Icons.check),
+              label: Text(saving ? 'Sačuvavam...' : 'Sačuvaj oglas'),
+              onPressed: saving ? null : _save,
+            ),
           ],
         ),
       ),

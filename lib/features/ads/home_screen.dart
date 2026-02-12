@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -33,14 +31,13 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final adsAsync = ref.watch(adsStreamProvider);
+    final selectedCategory = ref.watch(categoryFilterProvider);
+    final currency = ref.watch(currencyProvider);
 
     return adsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('Greška: $e')),
       data: (ads) {
-        final selectedCategory = ref.watch(categoryFilterProvider);
-        final currency = ref.watch(currencyProvider);
-
         final filteredAds = selectedCategory == null
             ? ads
             : ads.where((a) => a.category == selectedCategory).toList();
@@ -56,9 +53,8 @@ class HomeScreen extends ConsumerWidget {
                   ChoiceChip(
                     label: const Text('Sve'),
                     selected: selectedCategory == null,
-                    onSelected: (_) => ref
-                        .read(categoryFilterProvider.notifier)
-                        .setCategory(null),
+                    onSelected: (_) =>
+                        ref.read(categoryFilterProvider.notifier).setCategory(null),
                   ),
                   const SizedBox(width: 8),
                   ...AdCategory.values.map(
@@ -68,9 +64,8 @@ class HomeScreen extends ConsumerWidget {
                         avatar: Icon(_catIcon(c), size: 18),
                         label: Text(_catLabel(c)),
                         selected: selectedCategory == c,
-                        onSelected: (_) => ref
-                            .read(categoryFilterProvider.notifier)
-                            .setCategory(c),
+                        onSelected: (_) =>
+                            ref.read(categoryFilterProvider.notifier).setCategory(c),
                       ),
                     ),
                   ),
@@ -91,8 +86,10 @@ class HomeScreen extends ConsumerWidget {
                           title: ad.title,
                           priceText: formatPrice(ad.price, currency),
                           city: ad.city,
-                          categoryLabel: _catLabel(ad.category), 
-                          image: ad.images.isNotEmpty ? ad.images.first : null,
+                          categoryLabel: _catLabel(ad.category),
+                          imageUrl: ad.imageUrls.isNotEmpty
+                              ? ad.imageUrls.first
+                              : null,
                           onTap: () => context.go('/ad/${ad.id}'),
                         );
                       },
@@ -110,7 +107,7 @@ class _AdCard extends StatelessWidget {
   final String priceText;
   final String city;
   final String categoryLabel;
-  final Uint8List? image;
+  final String? imageUrl;
   final VoidCallback onTap;
 
   const _AdCard({
@@ -118,7 +115,7 @@ class _AdCard extends StatelessWidget {
     required this.priceText,
     required this.city,
     required this.categoryLabel,
-    required this.image,
+    required this.imageUrl,
     required this.onTap,
   });
 
@@ -136,7 +133,6 @@ class _AdCard extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               blurRadius: 14,
-              spreadRadius: 0,
               offset: const Offset(0, 6),
               color: Colors.black.withOpacity(0.08),
             ),
@@ -146,16 +142,21 @@ class _AdCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(18)),
               child: AspectRatio(
                 aspectRatio: 16 / 9,
-                child: image == null
+                child: imageUrl == null
                     ? Container(
                         color: theme.colorScheme.surfaceContainerHighest,
                         alignment: Alignment.center,
                         child: const Icon(Icons.image_not_supported, size: 44),
                       )
-                    : Image.memory(image!, fit: BoxFit.cover),
+                    : Image.network(
+                        imageUrl!,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                      ),
               ),
             ),
             Padding(
@@ -189,9 +190,7 @@ class _AdCard extends StatelessWidget {
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
+                            horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(999),
                           color: theme.colorScheme.surfaceContainerHighest,
@@ -219,7 +218,7 @@ class _AdCard extends StatelessWidget {
                 ],
               ),
             ),
-          ],
+          ], 
         ),
       ),
     );

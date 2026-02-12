@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import 'package:skriptarnica/features/currency/currency_format.dart';
 import 'package:skriptarnica/features/currency/currency_provider.dart';
 
 import '../../features/auth/auth_provider.dart';
 import 'ads_provider.dart';
 import 'ad_model.dart';
+import 'ads_repo_provider.dart';
 
 class MyAdsScreen extends ConsumerWidget {
   const MyAdsScreen({super.key});
@@ -38,62 +40,74 @@ class MyAdsScreen extends ConsumerWidget {
             onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('Da'),
           ),
-        ], 
+        ],
       ),
     );
 
     if (ok == true) {
-      ref.read(adsProvider.notifier).deleteAdAsOwnerOrAdmin(adId);
+      try {
+        await ref.read(adsRepoProvider).delete(adId);
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Greška: $e')),
+          );
+        }
+      }
     }
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider).user;
-    final ads = ref.watch(adsProvider);
     final currency = ref.watch(currencyProvider);
+    final myAdsAsync = ref.watch(myAdsStreamProvider);
 
     if (user == null) {
       return const Center(child: Text('Nisi ulogovana.'));
     }
 
-    final myAds = ads.where((a) => a.ownerId == user.id).toList();
+    return myAdsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Greška: $e')),
+      data: (myAds) {
+        if (myAds.isEmpty) {
+          return const Center(child: Text('Još nemaš nijedan oglas.'));
+        }
 
-    if (myAds.isEmpty) {
-      return const Center(child: Text('Još nemaš nijedan oglas.'));
-    }
+        return ListView.separated(
+          padding: const EdgeInsets.all(16),
+          itemCount: myAds.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 10),
+          itemBuilder: (context, i) {
+            final ad = myAds[i];
 
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: myAds.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (context, i) {
-        final ad = myAds[i];
-
-        return Card(
-          child: ListTile(
-            title: Text(ad.title),
-            subtitle: Text(
-              '${_catLabel(ad.category)} • ${formatPrice(ad.price, currency)}',
-            ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [ 
-                IconButton(
-                  tooltip: 'Izmeni',
-                  icon: const Icon(Icons.edit),
-                  onPressed: () => context.push('/edit/${ad.id}'),
+            return Card(
+              child: ListTile(
+                title: Text(ad.title),
+                subtitle: Text(
+                  '${_catLabel(ad.category)} • ${formatPrice(ad.price, currency)}',
                 ),
-                IconButton(
-                  tooltip: 'Obriši',
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () => _confirmDelete(context, ref, ad.id),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      tooltip: 'Izmeni',
+                      icon: const Icon(Icons.edit),
+                      onPressed: () => context.push('/edit/${ad.id}'),
+                    ),
+                    IconButton(
+                      tooltip: 'Obriši',
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () => _confirmDelete(context, ref, ad.id),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
-    );
+    ); 
   }
-} 
+}
