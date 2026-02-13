@@ -2,70 +2,61 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:skriptarnica/features/currency/currency_format.dart';
-import 'package:skriptarnica/features/currency/currency_provider.dart';
-
-import '../../features/auth/auth_provider.dart';
-import 'ads_provider.dart';
+import '../auth/auth_provider.dart';
+import '../currency/currency_format.dart';
+import '../currency/currency_provider.dart';
 import 'ad_model.dart';
-import 'ads_repo_provider.dart';
+import 'ads_provider.dart';
 
 class MyAdsScreen extends ConsumerWidget {
   const MyAdsScreen({super.key});
 
   String _catLabel(AdCategory c) => switch (c) {
-        AdCategory.elektronika => 'Elektronika',
-        AdCategory.odeca => 'Odeća',
-        AdCategory.namestaj => 'Nameštaj',
-        AdCategory.usluge => 'Usluge',
-        AdCategory.ostalo => 'Ostalo',
+        AdCategory.elektronika => 'Electronics',
+        AdCategory.odeca => 'Clothing',
+        AdCategory.namestaj => 'Furniture',
+        AdCategory.usluge => 'Services',
+        AdCategory.ostalo => 'Other',
       };
 
   Future<void> _confirmDelete(
     BuildContext context,
     WidgetRef ref,
-    String adId,
+    Ad ad,
   ) async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Brisanje oglasa'),
-        content: const Text('Da li želiš da obrišeš ovaj oglas?'),
+        title: const Text('Delete ad'),
+        content: const Text('Are you sure you want to delete this ad?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Ne'),
+            child: const Text('No'),
           ),
-          FilledButton(
+          FilledButton( 
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Da'),
+            child: const Text('Yes'),
           ),
         ],
       ),
     );
 
     if (ok == true) {
-      try {
-        await ref.read(adsRepoProvider).delete(adId);
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Greška: $e')),
-          );
-        }
-      }
+      await ref.read(adsActionsProvider.notifier).deleteAdAsOwnerOrAdmin(ad);
     }
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(authProvider).user;
+    final uid = ref.watch(authProvider.select((s) => s.user?.id));
     final currency = ref.watch(currencyProvider);
-    final myAdsAsync = ref.watch(myAdsStreamProvider);
 
-    if (user == null) {
+    if (uid == null) {
       return const Center(child: Text('Nisi ulogovana.'));
     }
+
+    final myAdsAsync = ref.watch(myAdsStreamProvider(uid));
 
     return myAdsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -99,7 +90,7 @@ class MyAdsScreen extends ConsumerWidget {
                     IconButton(
                       tooltip: 'Obriši',
                       icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () => _confirmDelete(context, ref, ad.id),
+                      onPressed: () => _confirmDelete(context, ref, ad),
                     ),
                   ],
                 ),
@@ -108,6 +99,6 @@ class MyAdsScreen extends ConsumerWidget {
           },
         );
       },
-    ); 
+    );
   }
 }

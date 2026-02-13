@@ -25,15 +25,15 @@ class MainShell extends ConsumerWidget {
   }
 
   String _roleLabel(UserRole role) {
-    switch (role) {
-      case UserRole.guest:
-        return 'Guest';
-      case UserRole.user:
-        return 'User';
-      case UserRole.admin:
-        return 'Admin';
-    }
+  switch (role) {
+    case UserRole.user:
+      return 'User';
+    case UserRole.admin:
+      return 'Admin';
+    case UserRole.inactive: 
+      return 'Inactive';
   }
+}
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -43,7 +43,7 @@ class MainShell extends ConsumerWidget {
     final currentIndex = _indexForLocation(location);
 
     void goProtected(String path) {
-      if (auth.role == UserRole.guest) {
+      if (auth.isGuest) {
         context.go('/login');
       } else {
         context.go(path);
@@ -53,15 +53,15 @@ class MainShell extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: Text('QuickAds • ${_roleLabel(auth.role)}'),
+        title: Text('QuickAds • ${auth.isGuest ? 'Guest' : _roleLabel(auth.user!.role)}'), 
         actions: [
           IconButton(
             tooltip: currency == Currency.eur ? 'EUR' : 'RSD',
             onPressed: () => ref.read(currencyProvider.notifier).toggle(),
             icon: const Icon(Icons.currency_exchange),
           ),
-          if (auth.role == UserRole.admin)
-            IconButton(
+          if (auth.isAdmin)
+            IconButton( 
               tooltip: 'Admin panel',
               onPressed: () => context.push('/admin'),
               icon: const Icon(Icons.admin_panel_settings),

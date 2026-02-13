@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 enum AdCategory { elektronika, odeca, namestaj, usluge, ostalo }
@@ -14,9 +12,7 @@ class Ad {
   final String ownerName;
   final String contact;
   final String city;
-
-  final List<Uint8List> images;
-  final List<String> imageUrls;
+  final int imagesCount;
 
   const Ad({
     required this.id,
@@ -28,8 +24,7 @@ class Ad {
     required this.ownerName,
     required this.contact,
     required this.city,
-    this.images = const [],
-    this.imageUrls = const [],
+    this.imagesCount = 0,
   });
 
   Ad copyWith({
@@ -42,8 +37,7 @@ class Ad {
     String? ownerName,
     String? contact,
     String? city,
-    List<Uint8List>? images,
-    List<String>? imageUrls,
+    int? imagesCount,
   }) {
     return Ad(
       id: id ?? this.id,
@@ -55,8 +49,7 @@ class Ad {
       ownerName: ownerName ?? this.ownerName,
       contact: contact ?? this.contact,
       city: city ?? this.city,
-      images: images ?? this.images,
-      imageUrls: imageUrls ?? this.imageUrls,
+      imagesCount: imagesCount ?? this.imagesCount,
     );
   }
 
@@ -70,7 +63,7 @@ class Ad {
       'ownerName': ownerName,
       'contact': contact,
       'city': city,
-      'imageUrls': imageUrls,
+      'imagesCount': imagesCount,
       'createdAt': FieldValue.serverTimestamp(),
     };
   }
@@ -84,7 +77,7 @@ class Ad {
       orElse: () => AdCategory.ostalo,
     );
 
-    return Ad(
+    return Ad( 
       id: doc.id,
       title: (data['title'] as String?) ?? '',
       description: (data['description'] as String?) ?? '',
@@ -94,8 +87,7 @@ class Ad {
       ownerName: (data['ownerName'] as String?) ?? '',
       contact: (data['contact'] as String?) ?? '',
       city: (data['city'] as String?) ?? '',
-      images: const [],
-      imageUrls: (data['imageUrls'] as List?)?.cast<String>() ?? const [],
+      imagesCount: ((data['imagesCount'] as num?) ?? 0).toInt(),
     );
   }
 }

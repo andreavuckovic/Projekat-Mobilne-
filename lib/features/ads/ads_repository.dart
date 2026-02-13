@@ -1,46 +1,11 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:skriptarnica/features/ads/ad_model.dart';
 
-import 'ad_model.dart';
+abstract class AdsRepository {
+  Stream<List<Ad>> watchAll();
+  Stream<List<Ad>> watchMy(String ownerId);
 
-class AdsRepository {
-  final FirebaseFirestore _db;
+  Future<String> createAd(Ad ad);
 
-  AdsRepository(this._db);
-
-  CollectionReference<Map<String, dynamic>> get _col =>
-      _db.collection('ads');
-
-  Stream<List<Ad>> watchAll() {
-    return _col
-        .snapshots()
-        .map((snap) => snap.docs.map(Ad.fromDoc).toList());
-  }
-
-  Stream<List<Ad>> watchMy(String ownerId) {
-    return _col
-        .where('ownerId', isEqualTo: ownerId)
-        .snapshots()
-        .map((snap) => snap.docs.map(Ad.fromDoc).toList());
-  }
-
-  Future<void> add(Ad ad) async {
-    await _col.add(ad.toMap());
-  }
-
-  Future<void> update(Ad ad) async {
-    await _col.doc(ad.id).update({
-      'title': ad.title,
-      'description': ad.description,
-      'category': ad.category.name,
-      'price': ad.price,
-      'ownerName': ad.ownerName,
-      'contact': ad.contact,
-      'city': ad.city,
-      'imageUrls': ad.imageUrls,
-    });
-  }
-
-  Future<void> delete(String adId) async {
-    await _col.doc(adId).delete();
-  }
+  Future<void> updateAd(Ad ad); 
+  Future<void> deleteAd(String adId);
 }

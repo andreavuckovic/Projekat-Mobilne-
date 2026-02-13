@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -13,11 +15,11 @@ class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   String _catLabel(AdCategory c) => switch (c) {
-        AdCategory.elektronika => 'Elektronika',
-        AdCategory.odeca => 'Odeća',
-        AdCategory.namestaj => 'Nameštaj',
-        AdCategory.usluge => 'Usluge',
-        AdCategory.ostalo => 'Ostalo',
+        AdCategory.elektronika => 'Electronics',
+        AdCategory.odeca => 'Clothing',
+        AdCategory.namestaj => 'Furniture',
+        AdCategory.usluge => 'Services',
+        AdCategory.ostalo => 'Other', 
       };
 
   IconData _catIcon(AdCategory c) => switch (c) {
@@ -83,13 +85,11 @@ class HomeScreen extends ConsumerWidget {
                       itemBuilder: (context, i) {
                         final ad = filteredAds[i];
                         return _AdCard(
+                          adId: ad.id,
                           title: ad.title,
                           priceText: formatPrice(ad.price, currency),
                           city: ad.city,
                           categoryLabel: _catLabel(ad.category),
-                          imageUrl: ad.imageUrls.isNotEmpty
-                              ? ad.imageUrls.first
-                              : null,
                           onTap: () => context.go('/ad/${ad.id}'),
                         );
                       },
@@ -102,26 +102,43 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-class _AdCard extends StatelessWidget {
+class _AdCard extends ConsumerWidget {
+  final String adId;
   final String title;
   final String priceText;
   final String city;
   final String categoryLabel;
-  final String? imageUrl;
   final VoidCallback onTap;
 
   const _AdCard({
+    required this.adId,
     required this.title,
     required this.priceText,
     required this.city,
     required this.categoryLabel,
-    required this.imageUrl,
     required this.onTap,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final thumbAsync = ref.watch(adThumbProvider(adId));
+
+    Widget imageWidget = Container(
+      color: theme.colorScheme.surfaceContainerHighest,
+      alignment: Alignment.center,
+      child: const Icon(Icons.image_not_supported, size: 44),
+    );
+
+    thumbAsync.whenData((bytes) {
+      if (bytes != null) {
+        imageWidget = Image.memory(
+          bytes,
+          fit: BoxFit.cover,
+          width: double.infinity,
+        );
+      }
+    });
 
     return InkWell(
       borderRadius: BorderRadius.circular(18),
@@ -142,21 +159,16 @@ class _AdCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ClipRRect(
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(18)),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
               child: AspectRatio(
                 aspectRatio: 16 / 9,
-                child: imageUrl == null
-                    ? Container(
-                        color: theme.colorScheme.surfaceContainerHighest,
-                        alignment: Alignment.center,
-                        child: const Icon(Icons.image_not_supported, size: 44),
-                      )
-                    : Image.network(
-                        imageUrl!,
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                      ),
+                child: thumbAsync.when(
+                  loading: () => imageWidget,
+                  error: (_, __) => imageWidget,
+                  data: (Uint8List? bytes) => bytes == null
+                      ? imageWidget
+                      : Image.memory(bytes, fit: BoxFit.cover, width: double.infinity),
+                ),
               ),
             ),
             Padding(
@@ -181,7 +193,7 @@ class _AdCard extends StatelessWidget {
                         priceText,
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w800,
-                        ),
+                        ), 
                       ),
                     ],
                   ),
@@ -189,8 +201,7 @@ class _AdCard extends StatelessWidget {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(999),
                           color: theme.colorScheme.surfaceContainerHighest,
@@ -199,8 +210,8 @@ class _AdCard extends StatelessWidget {
                           categoryLabel,
                           style: theme.textTheme.labelMedium?.copyWith(
                             fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                          ), 
+                        ), 
                       ),
                       const SizedBox(width: 10),
                       const Icon(Icons.location_on_outlined, size: 18),
@@ -218,7 +229,7 @@ class _AdCard extends StatelessWidget {
                 ],
               ),
             ),
-          ], 
+          ],
         ),
       ),
     );

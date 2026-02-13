@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -20,11 +22,11 @@ class _AdDetailsScreenState extends ConsumerState<AdDetailsScreen> {
   int _page = 0;
 
   String _catLabel(AdCategory c) => switch (c) {
-        AdCategory.elektronika => 'Elektronika',
-        AdCategory.odeca => 'Odeća',
-        AdCategory.namestaj => 'Nameštaj',
-        AdCategory.usluge => 'Usluge',
-        AdCategory.ostalo => 'Ostalo',
+        AdCategory.elektronika => 'Electronics',
+        AdCategory.odeca => 'Clothing',
+        AdCategory.namestaj => 'Furniture', 
+        AdCategory.usluge => 'Services',
+        AdCategory.ostalo => 'Other',
       };
 
   @override
@@ -48,6 +50,7 @@ class _AdDetailsScreenState extends ConsumerState<AdDetailsScreen> {
           );
         }
 
+        final imagesAsync = ref.watch(adImagesProvider(ad.id));
         final theme = Theme.of(context);
 
         return Scaffold(
@@ -60,54 +63,67 @@ class _AdDetailsScreenState extends ConsumerState<AdDetailsScreen> {
           ),
           body: ListView(
             children: [
-              if (ad.imageUrls.isNotEmpty)
-                Stack(
-                  children: [
-                    SizedBox(
-                      height: 300,
-                      child: PageView.builder(
-                        itemCount: ad.imageUrls.length,
-                        onPageChanged: (i) => setState(() => _page = i),
-                        itemBuilder: (_, i) => Image.network(
-                          ad.imageUrls[i],
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          errorBuilder: (_, __, ___) => Container(
-                            alignment: Alignment.center,
-                            color: theme.colorScheme.surfaceContainerHighest,
-                            child: const Icon(Icons.broken_image, size: 60),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      left: 16,
-                      bottom: 12,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(999),
-                          color: Colors.black.withOpacity(0.55),
-                        ),
-                        child: Text(
-                          '${_page + 1}/${ad.imageUrls.length}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                )
-              else
-                Container(
+              imagesAsync.when(
+                loading: () => SizedBox(
+                  height: 300,
+                  child: Container(
+                    alignment: Alignment.center,
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    child: const CircularProgressIndicator(),
+                  ),
+                ),
+                error: (e, _) => Container(
                   height: 240,
                   alignment: Alignment.center,
                   color: theme.colorScheme.surfaceContainerHighest,
-                  child: const Icon(Icons.image_not_supported, size: 60),
+                  child: Text('Greška: $e'),
                 ),
+                data: (List<Uint8List> images) {
+                  if (images.isEmpty) {
+                    return Container(
+                      height: 240,
+                      alignment: Alignment.center,
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      child: const Icon(Icons.image_not_supported, size: 60),
+                    );
+                  }
+
+                  return Stack(
+                    children: [
+                      SizedBox(
+                        height: 300,
+                        child: PageView.builder(
+                          itemCount: images.length,
+                          onPageChanged: (i) => setState(() => _page = i),
+                          itemBuilder: (_, i) => Image.memory(
+                            images[i],
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        left: 16,
+                        bottom: 12,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(999),
+                            color: Colors.black.withOpacity(0.55),
+                          ),
+                          child: Text(
+                            '${_page + 1}/${images.length}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -123,8 +139,7 @@ class _AdDetailsScreenState extends ConsumerState<AdDetailsScreen> {
                         ),
                         const SizedBox(width: 12),
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(999),
                             color: theme.colorScheme.surfaceContainerHighest,
@@ -199,8 +214,7 @@ class _InfoTile extends StatelessWidget {
           const SizedBox(width: 10),
           Text(
             '$label:',
-            style:
-                theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+            style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(width: 8),
           Expanded(

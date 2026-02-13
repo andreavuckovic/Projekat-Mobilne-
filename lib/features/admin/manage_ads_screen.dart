@@ -9,95 +9,101 @@ class ManageAdsScreen extends ConsumerWidget {
   const ManageAdsScreen({super.key});
 
   String _catLabel(AdCategory c) => switch (c) {
-        AdCategory.elektronika => 'Elektronika',
-        AdCategory.odeca => 'Odeća',
-        AdCategory.namestaj => 'Nameštaj',
-        AdCategory.usluge => 'Usluge',
-        AdCategory.ostalo => 'Ostalo',
+        AdCategory.elektronika => 'Electronics',
+        AdCategory.odeca => 'Clothing', 
+        AdCategory.namestaj => 'Furniture',
+        AdCategory.usluge => 'Services',
+        AdCategory.ostalo => 'Other', 
       };
 
   Future<void> _confirmDelete(
     BuildContext context,
     WidgetRef ref,
-    String adId,
+    Ad ad,
   ) async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Brisanje oglasa'),
-        content: const Text('Da li želiš da obrišeš ovaj oglas?'),
+        title: const Text('Delete ad'),
+        content: const Text('Are you sure ypu want to delete this ad?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Ne'),
+            child: const Text('No'),
           ),
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Da'),
+            child: const Text('Yes'), 
           ),
         ],
       ),
-    );
+    ); 
 
     if (ok == true) {
-      ref.read(adsProvider.notifier).deleteAdAsOwnerOrAdmin(adId);
+      await ref.read(adsActionsProvider.notifier).deleteAdAsOwnerOrAdmin(ad);
     }
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final ads = ref.watch(adsProvider);
+    final adsAsync = ref.watch(adsStreamProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Svi oglasi'),
-        leading: IconButton( 
+        leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-            onPressed: () {
+          onPressed: () {
             if (Navigator.of(context).canPop()) {
-            context.pop();
-          } else {
-            context.go('/admin');
-         }
-     },  
+              context.pop();
+            } else {
+              context.go('/admin');
+            }
+          },
         ),
       ),
-      body: ads.isEmpty
-          ? const Center(child: Text('Nema oglasa.'))
-          : ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: ads.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (context, i) {
-                final ad = ads[i]; 
+      body: adsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('Greška: $e')),
+        data: (ads) {
+          if (ads.isEmpty) return const Center(child: Text('Nema oglasa.'));
 
-                return Card(
-                  child: ListTile(
-                    title: Text(ad.title),
-                    subtitle: Text(
-                      '${_catLabel(ad.category)} • ${ad.price.toStringAsFixed(0)} €\n${ad.ownerName} • ${ad.city}',
-                    ),
-                    isThreeLine: true,
-                    onTap: () => context.go('/ad/${ad.id}'),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          tooltip: 'Izmeni',
-                          icon: const Icon(Icons.edit),
-                          onPressed: () => context.push('/edit/${ad.id}'),
-                        ),
-                        IconButton(
-                          tooltip: 'Obriši',
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () => _confirmDelete(context, ref, ad.id),
-                        ),
-                      ],
-                    ),
+          return ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: ads.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            itemBuilder: (context, i) {
+              final ad = ads[i];
+
+              return Card(
+                child: ListTile(
+                  title: Text(ad.title),
+                  subtitle: Text(
+                    '${_catLabel(ad.category)} • ${ad.price.toStringAsFixed(0)} €\n${ad.ownerName} • ${ad.city}',
                   ),
-                );
-              },
-            ),
+                  isThreeLine: true,
+                  onTap: () => context.go('/ad/${ad.id}'),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        tooltip: 'Izmeni',
+                        icon: const Icon(Icons.edit),
+                        onPressed: () => context.push('/edit/${ad.id}'),
+                      ),
+                      IconButton(
+                        tooltip: 'Obriši',
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () => _confirmDelete(context, ref, ad),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }

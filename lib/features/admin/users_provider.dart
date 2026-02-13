@@ -1,29 +1,54 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../auth/auth_state.dart';
 
-final usersProvider = NotifierProvider<UsersController, List<AppUser>>(UsersController.new);
+final adminUsersStreamProvider = StreamProvider.autoDispose<List<AppUser>>((ref) {
+  final col = FirebaseFirestore.instance.collection('users');
+  return col.snapshots().map((snap) {
+    return snap.docs.map((d) {
+      final data = d.data();
+      final roleStr = (data['role'] as String?) ?? 'user';
 
-class UsersController extends Notifier<List<AppUser>> {
+      final role = switch (roleStr) {
+        'admin' => UserRole.admin,
+        'inactive' => UserRole.inactive,
+        _ => UserRole.user,
+      };
+
+      return AppUser(
+        id: d.id,
+        email: (data['email'] as String?) ?? '',
+        displayName: (data['displayName'] as String?) ?? '',
+        role: role,
+      );
+    }).toList();
+  });
+}); 
+
+final adminUsersActionsProvider =
+    NotifierProvider<AdminUsersActions, AsyncValue<void>>(AdminUsersActions.new);
+
+class AdminUsersActions extends Notifier<AsyncValue<void>> {
   @override
-  List<AppUser> build() {
-    return const [
-      AppUser(id: 'u1', email: 'user@test.com', displayName: 'Andrea', role: UserRole.user),
-      AppUser(id: 'u2', email: 'mila@test.com', displayName: 'Mila', role: UserRole.user),
-      AppUser(id: 'a1', email: 'admin@test.com', displayName: 'Admin', role: UserRole.admin),
-    ];
+  AsyncValue<void> build() => const AsyncValue.data(null);
+
+  Future<void> deleteUser(String uid) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      await FirebaseFirestore.instance.collection('users').doc(uid).delete();
+      ref.invalidate(adminUsersStreamProvider);
+    });
   }
 
-  void deleteUser(String id) {
-    state = state.where((u) => u.id != id).toList();
-  }
-
-  void setRole(String id, UserRole role) {
-    state = [
-      for (final u in state)
-        if (u.id == id)
-          AppUser(id: u.id, email: u.email, displayName: u.displayName, role: role)
-        else
-          u,
-    ];
+  Future<void> setRole(String uid, UserRole role) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      await FirebaseFirestore.instance.collection('users').doc(uid).set(
+        {'role': role.name},
+        SetOptions(merge: true),
+      );
+      ref.invalidate(adminUsersStreamProvider);
+    });
   }
 }

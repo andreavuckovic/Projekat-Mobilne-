@@ -1,9 +1,11 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 import 'ad_model.dart';
-import 'ads_repo_provider.dart';
 import 'ads_provider.dart';
 
 class EditAdScreen extends ConsumerStatefulWidget {
@@ -22,11 +24,14 @@ class _EditAdScreenState extends ConsumerState<EditAdScreen> {
   final priceCtrl = TextEditingController();
   final contactCtrl = TextEditingController();
   final cityCtrl = TextEditingController();
-  final imageUrlCtrl = TextEditingController();
 
   AdCategory cat = AdCategory.elektronika;
+
   bool saving = false;
   bool _inited = false;
+
+  final _picker = ImagePicker();
+  List<Uint8List> _images = [];
 
   @override
   void dispose() {
@@ -35,13 +40,23 @@ class _EditAdScreenState extends ConsumerState<EditAdScreen> {
     priceCtrl.dispose();
     contactCtrl.dispose();
     cityCtrl.dispose();
-    imageUrlCtrl.dispose();
     super.dispose();
   }
 
-  bool _looksLikeUrl(String s) {
-    final v = s.trim();
-    return v.startsWith('http://') || v.startsWith('https://');
+  Future<void> _pickImages() async {
+    final files = await _picker.pickMultiImage(imageQuality: 85);
+    if (files.isEmpty) return;
+
+    final bytesList = await Future.wait(files.map((f) => f.readAsBytes()));
+    setState(() {
+      _images.addAll(bytesList);
+    });
+  }
+
+  void _removeImage(int index) {
+    setState(() {
+      _images.removeAt(index);
+    });
   }
 
   Future<void> _save(Ad original) async {
@@ -49,30 +64,23 @@ class _EditAdScreenState extends ConsumerState<EditAdScreen> {
 
     setState(() => saving = true);
 
-    final repo = ref.read(adsRepoProvider);
-
     try {
-      final url = imageUrlCtrl.text.trim();
-      final urls = url.isEmpty ? const <String>[] : <String>[url];
-
-      final updated = original.copyWith(
-        title: titleCtrl.text.trim(),
-        description: descCtrl.text.trim(),
-        category: cat,
-        price: double.parse(priceCtrl.text.trim()),
-        contact: contactCtrl.text.trim(),
-        city: cityCtrl.text.trim(),
-        imageUrls: urls,
-        images: const [],
-      );
-
-      await repo.update(updated);
+      await ref.read(adsActionsProvider.notifier).updateAd(
+            original: original,
+            title: titleCtrl.text.trim(),
+            description: descCtrl.text.trim(),
+            category: cat,
+            price: double.parse(priceCtrl.text.trim()),
+            contact: contactCtrl.text.trim(),
+            city: cityCtrl.text.trim(),
+            newImages: List<Uint8List>.from(_images),
+          );
 
       if (mounted) context.pop();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Greška: $e')),
+          SnackBar(content: Text('Error: $e')),
         );
       }
     } finally {
@@ -83,17 +91,21 @@ class _EditAdScreenState extends ConsumerState<EditAdScreen> {
   @override
   Widget build(BuildContext context) {
     final adsAsync = ref.watch(adsStreamProvider);
+    final imagesAsync = ref.watch(adImagesProvider(widget.adId));
+    final theme = Theme.of(context);
 
     return adsAsync.when(
       loading: () => const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       ),
-      error: (e, _) => Scaffold(body: Center(child: Text('Greška: $e'))),
+      error: (e, _) => Scaffold(
+        body: Center(child: Text('Error: $e')),
+      ),
       data: (ads) {
         final ad = ads.where((a) => a.id == widget.adId).firstOrNull;
         if (ad == null) {
           return const Scaffold(
-            body: Center(child: Text('Oglas nije pronađen.')),
+            body: Center(child: Text('Ad not found.')),
           );
         }
 
@@ -104,15 +116,12 @@ class _EditAdScreenState extends ConsumerState<EditAdScreen> {
           contactCtrl.text = ad.contact;
           cityCtrl.text = ad.city;
           cat = ad.category;
-          imageUrlCtrl.text = ad.imageUrls.isNotEmpty ? ad.imageUrls.first : '';
           _inited = true;
         }
 
-        final previewUrl = imageUrlCtrl.text.trim();
-
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Izmeni oglas'),
+            title: const Text('Edit Ad'),
             leading: IconButton(
               icon: const Icon(Icons.arrow_back),
               onPressed: () => context.pop(),
@@ -126,11 +135,11 @@ class _EditAdScreenState extends ConsumerState<EditAdScreen> {
                 TextFormField(
                   controller: titleCtrl,
                   decoration: const InputDecoration(
-                    labelText: 'Naslov',
+                    labelText: 'Title',
                     border: OutlineInputBorder(),
                   ),
                   validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Unesi naslov' : null,
+                      (v == null || v.trim().isEmpty) ? 'Enter a title' : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
@@ -138,23 +147,24 @@ class _EditAdScreenState extends ConsumerState<EditAdScreen> {
                   minLines: 2,
                   maxLines: 5,
                   decoration: const InputDecoration(
-                    labelText: 'Opis',
+                    labelText: 'Description',
                     border: OutlineInputBorder(),
                   ),
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Unesi opis' : null,
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? 'Enter a description'
+                      : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: priceCtrl,
                   keyboardType: TextInputType.number,
                   decoration: const InputDecoration(
-                    labelText: 'Cena (EUR)',
+                    labelText: 'Price (EUR)',
                     border: OutlineInputBorder(),
                   ),
                   validator: (v) {
                     final p = double.tryParse((v ?? '').trim());
-                    if (p == null || p <= 0) return 'Unesi cenu > 0';
+                    if (p == null || p <= 0) return 'Enter a price greater than 0';
                     return null;
                   },
                 ),
@@ -162,27 +172,28 @@ class _EditAdScreenState extends ConsumerState<EditAdScreen> {
                 TextFormField(
                   controller: contactCtrl,
                   decoration: const InputDecoration(
-                    labelText: 'Kontakt',
+                    labelText: 'Contact',
                     border: OutlineInputBorder(),
                   ),
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Unesi kontakt' : null,
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? 'Enter contact information'
+                      : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: cityCtrl,
                   decoration: const InputDecoration(
-                    labelText: 'Grad',
+                    labelText: 'City',
                     border: OutlineInputBorder(),
                   ),
                   validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Unesi grad' : null,
+                      (v == null || v.trim().isEmpty) ? 'Enter city' : null,
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<AdCategory>(
                   value: cat,
                   decoration: const InputDecoration(
-                    labelText: 'Kategorija',
+                    labelText: 'Category',
                     border: OutlineInputBorder(),
                   ),
                   items: AdCategory.values
@@ -191,44 +202,97 @@ class _EditAdScreenState extends ConsumerState<EditAdScreen> {
                   onChanged: (v) => setState(() => cat = v ?? cat),
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
-                  controller: imageUrlCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Image URL (opciono)',
-                    border: OutlineInputBorder(),
+                Text(
+                  'Current images',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
                   ),
-                  keyboardType: TextInputType.url,
-                  onChanged: (_) => setState(() {}),
-                  validator: (v) {
-                    final s = (v ?? '').trim();
-                    if (s.isEmpty) return null;
-                    if (!_looksLikeUrl(s)) return 'Unesi http/https link';
-                    return null;
+                ),
+                const SizedBox(height: 10),
+                imagesAsync.when(
+                  loading: () => Container(
+                    height: 110,
+                    alignment: Alignment.center,
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    child: const CircularProgressIndicator(),
+                  ),
+                  error: (e, _) => Text('Error: $e'),
+                  data: (imgs) {
+                    if (imgs.isEmpty) {
+                      return Container(
+                        height: 110,
+                        alignment: Alignment.center,
+                        color: theme.colorScheme.surfaceContainerHighest,
+                        child: const Text('No images.'),
+                      );
+                    }
+                    return Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        for (final b in imgs)
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(14),
+                            child: Image.memory(
+                              b,
+                              width: 110,
+                              height: 110,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                      ],
+                    );
                   },
                 ),
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.photo_library_outlined),
+                  label: Text(
+                    _images.isEmpty ? 'Add new images' : 'Add more (${_images.length})',
+                  ),
+                  onPressed: saving ? null : _pickImages,
+                ),
                 const SizedBox(height: 12),
-                if (previewUrl.isNotEmpty && _looksLikeUrl(previewUrl))
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(14),
-                    child: AspectRatio(
-                      aspectRatio: 16 / 9,
-                      child: Image.network(
-                        previewUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          alignment: Alignment.center,
-                          color: Theme.of(context)
-                              .colorScheme
-                              .surfaceContainerHighest,
-                          child: const Text('Ne mogu da učitam sliku'),
+                if (_images.isNotEmpty)
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      for (int i = 0; i < _images.length; i++)
+                        Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(14),
+                              child: Image.memory(
+                                _images[i],
+                                width: 110,
+                                height: 110,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            Positioned(
+                              right: 6,
+                              top: 6,
+                              child: InkWell(
+                                onTap: saving ? null : () => _removeImage(i),
+                                child: Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.surface.withOpacity(0.9),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.close, size: 18),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ),
+                    ],
                   ),
                 const SizedBox(height: 16),
                 ElevatedButton.icon(
                   icon: const Icon(Icons.save),
-                  label: Text(saving ? 'Sačuvavam...' : 'Sačuvaj izmene'),
+                  label: Text(saving ? 'Saving...' : 'Save changes'),
                   onPressed: saving ? null : () => _save(ad),
                 ),
               ],
