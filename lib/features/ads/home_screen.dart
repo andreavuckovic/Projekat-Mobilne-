@@ -31,7 +31,7 @@ class HomeScreen extends ConsumerWidget {
       };
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context, WidgetRef ref) { 
     final adsAsync = ref.watch(adsStreamProvider);
     final selectedCategory = ref.watch(categoryFilterProvider);
     final currency = ref.watch(currencyProvider);

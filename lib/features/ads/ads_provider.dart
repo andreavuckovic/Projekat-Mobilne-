@@ -94,44 +94,50 @@ class AdsActionsController extends Notifier<AsyncValue<void>> {
   }
 
   Future<void> updateAd({
-    required Ad original,
-    required String title,
-    required String description,
-    required AdCategory category,
-    required double price,
-    required String contact,
-    required String city,
-    required List<Uint8List> newImages,
-  }) async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
-      final repo = ref.read(adsRepoProvider);
-      final imagesRepo = ref.read(adImagesRepoProvider);
+  required Ad original,
+  required String title,
+  required String description,
+  required AdCategory category,
+  required double price,
+  required String contact,
+  required String city,
+  required List<Uint8List> newImages,
+}) async {
+  state = const AsyncValue.loading();
+  state = await AsyncValue.guard(() async {
+    final repo = ref.read(adsRepoProvider);
+    final imagesRepo = ref.read(adImagesRepoProvider);
 
+    var imagesCount = original.imagesCount;
+
+    if (newImages.isNotEmpty) {
       final compressed = ImageCompress.compressMany(newImages);
 
       await imagesRepo
           .replaceAllImages(adId: original.id, images: compressed)
           .timeout(const Duration(seconds: 20));
 
-      final updated = original.copyWith(
-        title: title,
-        description: description,
-        category: category,
-        price: price,
-        contact: contact,
-        city: city,
-        imagesCount: compressed.length, 
-      );
+      imagesCount = compressed.length;
+    }
 
-      await repo.updateAd(updated).timeout(const Duration(seconds: 15));
+    final updated = original.copyWith(
+      title: title,
+      description: description,
+      category: category,
+      price: price,
+      contact: contact,
+      city: city,
+      imagesCount: imagesCount,
+    );
 
-      ref.invalidate(adsStreamProvider);
-      ref.invalidate(myAdsStreamProvider(original.ownerId));
-      ref.invalidate(adThumbProvider(original.id));
-      ref.invalidate(adImagesProvider(original.id));
-    });
-  }
+    await repo.updateAd(updated).timeout(const Duration(seconds: 15));
+
+    ref.invalidate(adsStreamProvider);
+    ref.invalidate(myAdsStreamProvider(original.ownerId));
+    ref.invalidate(adThumbProvider(original.id));
+    ref.invalidate(adImagesProvider(original.id));
+  });
+} 
 
   Future<void> deleteAdAsOwnerOrAdmin(Ad ad) async {
     final auth = ref.read(authProvider);

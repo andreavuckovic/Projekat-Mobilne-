@@ -293,7 +293,7 @@ class _EditAdScreenState extends ConsumerState<EditAdScreen> {
                 ElevatedButton.icon(
                   icon: const Icon(Icons.save),
                   label: Text(saving ? 'Saving...' : 'Save changes'),
-                  onPressed: saving ? null : () => _save(ad),
+                  onPressed: saving ? null : () => _save(ad), 
                 ),
               ],
             ),
